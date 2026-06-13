@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GastroBotics – Kostenvergleichsrechnung Lernapp</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c1a14;
+  --surface:#131f18;
+  --surface2:#1a2b20;
+  --border:#253320;
+  --accent:#4caf7d;
+  --accent-light:#7dd4a0;
+  --accent-dim:#0d2318;
+  --green:#3ecf8e;
+  --green-dim:#0d2e1f;
+  --red:#f56565;
+  --red-dim:#2e0d0d;
+  --amber:#f0a500;
+  --amber-dim:#2e2000;
+  --text:#e0ede5;
+  --text2:#7da88a;
+  --text3:#3d6349;
+  --radius:12px;
+  --radius-sm:8px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
+.app{max-width:860px;margin:0 auto;padding:2rem 1.5rem 4rem}
+
+.header{display:flex;align-items:center;gap:14px;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.logo{width:44px;height:44px;border-radius:var(--radius-sm);background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:22px}
+.header-text h1{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;color:var(--text)}
+.header-text p{font-size:13px;color:var(--text2)}
+
+.nav{display:flex;gap:6px;margin-bottom:2rem;flex-wrap:wrap}
+.nav-btn{padding:8px 18px;border-radius:40px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.nav-btn:hover{border-color:var(--accent);color:var(--text)}
+.nav-btn.active{background:var(--accent);border-color:var(--accent);color:#061209;font-weight:600}
+
+.screen{display:none}
+.screen.active{display:block}
+
+/* Overview */
+.topic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.topic-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.topic-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .25s}
+.topic-card:hover{border-color:var(--accent);background:var(--surface2)}
+.topic-card:hover::before{transform:scaleX(1)}
+.topic-card.cta{border-color:var(--accent);background:var(--accent-dim)}
+.topic-card.cta .topic-title,.topic-card.cta .topic-icon{color:var(--accent-light)}
+.topic-icon{font-size:26px;margin-bottom:10px}
+.topic-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:5px}
+.topic-count{font-size:12px;color:var(--text2)}
+
+/* Flashcards */
+.card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:10px}
+.topic-sel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);cursor:pointer}
+.topic-sel:focus{outline:none;border-color:var(--accent)}
+.counter{font-size:13px;color:var(--text2)}
+.progress{height:3px;background:var(--surface2);border-radius:2px;margin-bottom:1.5rem}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .35s}
+.flashcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;min-height:200px;cursor:pointer;transition:border-color .2s}
+.flashcard:hover{border-color:var(--accent)}
+.card-badge{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-light);background:var(--accent-dim);padding:3px 10px;border-radius:20px;margin-bottom:14px}
+.card-q{font-size:16px;font-weight:500;color:var(--text);line-height:1.6}
+.card-a{font-size:14px;color:var(--text2);line-height:1.7;margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid var(--border);display:none}
+.card-a.show{display:block}
+.flip-hint{font-size:12px;color:var(--text3);text-align:center;margin-top:1.5rem}
+.card-btns{display:flex;gap:8px;margin-top:1rem;justify-content:center;flex-wrap:wrap}
+.cbtn{padding:9px 22px;border-radius:40px;border:1px solid var(--border);background:transparent;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;color:var(--text)}
+.cbtn:hover{background:var(--surface2)}
+.cbtn.reveal{border-color:var(--accent);color:var(--accent-light)}
+.cbtn.reveal:hover{background:var(--accent-dim)}
+.cbtn.good{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+.cbtn.bad{border-color:var(--red);color:var(--red);background:var(--red-dim)}
+
+/* Quiz */
+.quiz-stats{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
+.stat-pill{padding:4px 14px;border-radius:20px;font-size:13px;font-weight:500}
+.stat-pill.total{background:var(--accent-dim);color:var(--accent-light)}
+.stat-pill.right{background:var(--green-dim);color:var(--green)}
+.stat-pill.wrong{background:var(--red-dim);color:var(--red)}
+.quiz-q{font-size:15px;font-weight:500;color:var(--text);margin-bottom:1.5rem;line-height:1.6;padding:1.5rem;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem}
+.qopt{padding:12px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:left;transition:all .2s;line-height:1.5}
+.qopt:hover:not(.disabled){border-color:var(--accent);background:var(--accent-dim)}
+.qopt.correct{background:var(--green-dim);border-color:var(--green);color:var(--green);pointer-events:none}
+.qopt.wrong{background:var(--red-dim);border-color:var(--red);color:var(--red);pointer-events:none}
+.qopt.disabled{pointer-events:none;opacity:.5}
+.quiz-fb{padding:12px 16px;border-radius:var(--radius-sm);font-size:14px;margin-bottom:1rem;line-height:1.6;display:none}
+.quiz-fb.ok{background:var(--green-dim);color:var(--green);border:1px solid var(--green)}
+.quiz-fb.nok{background:var(--red-dim);color:var(--red);border:1px solid var(--red)}
+.next-btn{padding:10px 28px;border-radius:40px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent-light);font-size:14px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;transition:all .2s;display:none}
+.next-btn:hover{background:var(--accent);color:#061209}
+.quiz-end{text-align:center;padding:3rem 1rem}
+.end-score{font-family:'DM Serif Display',serif;font-size:72px;color:var(--accent-light);margin:1rem 0 .5rem}
+.end-label{font-size:16px;color:var(--text2);margin-bottom:2rem}
+.end-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.end-btn{padding:10px 24px;border-radius:40px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;transition:all .2s}
+.end-btn.primary{background:var(--accent);border:none;color:#061209}
+.end-btn.primary:hover{opacity:.85}
+.end-btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.end-btn.secondary:hover{border-color:var(--accent);color:var(--text)}
+
+/* Kalkulator */
+.calc-tabs{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
+.ctab{padding:7px 16px;border-radius:40px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}
+.ctab.active{background:var(--accent);border-color:var(--accent);color:#061209;font-weight:600}
+.calc-screen{display:none}
+.calc-screen.active{display:block}
+.calc-info{font-size:13px;color:var(--text2);margin-bottom:1rem;padding:10px 14px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);line-height:1.6}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1rem}
+@media(max-width:600px){.calc-grid{grid-template-columns:1fr}}
+.calc-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem}
+.calc-col-title{font-size:13px;font-weight:600;color:var(--accent-light);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.05em}
+.inp-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem;gap:8px;flex-wrap:wrap}
+.inp-label{font-size:13px;color:var(--text2);flex:1;min-width:120px}
+.inp-val{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:5px 8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;width:120px;text-align:right}
+.inp-val:focus{outline:none;border-color:var(--accent)}
+.result-table{width:100%;border-collapse:collapse;font-size:14px;margin-top:1rem}
+.result-table td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text2)}
+.result-table td:last-child,.result-table td:nth-last-child(2){text-align:right;font-variant-numeric:tabular-nums;color:var(--text)}
+.result-table tr.bold td{font-weight:600;color:var(--text);background:var(--surface2)}
+.result-table tr.winner td{font-weight:600;color:var(--accent-light);background:var(--accent-dim)}
+.result-table thead td{font-size:12px;font-weight:600;color:var(--accent-light);text-transform:uppercase;letter-spacing:.04em;background:var(--surface2)}
+.btn-calc{padding:9px 24px;border-radius:40px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent-light);font-size:14px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;margin-top:1rem;transition:all .2s}
+.btn-calc:hover{background:var(--accent);color:#061209}
+.verdict{margin-top:1.2rem;padding:12px 16px;border-radius:var(--radius-sm);font-size:14px;line-height:1.6;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent-light);display:none}
+
+/* Summary */
+.sum-section{margin-bottom:2rem}
+.sum-h{font-size:15px;font-weight:600;color:var(--text);margin-bottom:1rem;display:flex;align-items:center;gap:8px;padding-bottom:.6rem;border-bottom:1px solid var(--border)}
+.def-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.def-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem 1rem}
+.def-term{font-size:12px;font-weight:600;color:var(--accent-light);letter-spacing:.03em;margin-bottom:5px}
+.def-text{font-size:13px;color:var(--text2);line-height:1.55}
+.formula-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem 1.2rem;font-size:14px;color:var(--text);margin-bottom:.8rem;font-family:'DM Sans',monospace}
+.formula-box span{color:var(--accent-light);font-weight:600}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">🏭</div>
+    <div class="header-text">
+      <h1>GastroBotics – Kostenvergleichsrechnung</h1>
+      <p>Lernkarten · Quiz · Kalkulator · Zusammenfassung</p>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showScreen('overview')" id="tab-overview"><span>🗂</span> Übersicht</button>
+    <button class="nav-btn" onclick="showScreen('cards')" id="tab-cards"><span>🃏</span> Lernkarten</button>
+    <button class="nav-btn" onclick="showScreen('quiz')" id="tab-quiz"><span>❓</span> Quiz</button>
+    <button class="nav-btn" onclick="showScreen('calc')" id="tab-calc"><span>🧮</span> Kalkulator</button>
+    <button class="nav-btn" onclick="showScreen('summary')" id="tab-summary"><span>📖</span> Zusammenfassung</button>
+  </nav>
+
+  <!-- ÜBERSICHT -->
+  <div class="screen active" id="screen-overview">
+    <div class="topic-grid">
+      <div class="topic-card" onclick="goCards(0)">
+        <div class="topic-icon">📋</div>
+        <div class="topic-title">Grundlagen Investitionsrechnung</div>
+        <div class="topic-count">Statisch vs. dynamisch · Verfahrensarten</div>
+      </div>
+      <div class="topic-card" onclick="goCards(1)">
+        <div class="topic-icon">💰</div>
+        <div class="topic-title">Kapitalkosten</div>
+        <div class="topic-count">Kalk. Abschreibung · Kalk. Zinsen · Formeln</div>
+      </div>
+      <div class="topic-card" onclick="goCards(2)">
+        <div class="topic-icon">🔄</div>
+        <div class="topic-title">Ersatzinvestition</div>
+        <div class="topic-count">Draumet vs. AKSIS · Kritische Menge</div>
+      </div>
+      <div class="topic-card" onclick="goCards(3)">
+        <div class="topic-icon">⚡</div>
+        <div class="topic-title">Rationalisierungsinvestition</div>
+        <div class="topic-count">Altanlage · Liquidationserlös · Sunk Costs</div>
+      </div>
+      <div class="topic-card" onclick="showScreen('calc')">
+        <div class="topic-icon">🧮</div>
+        <div class="topic-title">Kalkulator</div>
+        <div class="topic-count">Ersatz- &amp; Rationalisierung interaktiv</div>
+      </div>
+      <div class="topic-card cta" onclick="showScreen('quiz')">
+        <div class="topic-icon">⭐</div>
+        <div class="topic-title">Quiz starten</div>
+        <div class="topic-count">Alle Themen · 20 Fragen</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LERNKARTEN -->
+  <div class="screen" id="screen-cards">
+    <div class="card-top">
+      <select class="topic-sel" id="topic-sel" onchange="loadTopic()">
+        <option value="0">Grundlagen Investitionsrechnung</option>
+        <option value="1">Kapitalkosten</option>
+        <option value="2">Ersatzinvestition</option>
+        <option value="3">Rationalisierungsinvestition</option>
+        <option value="all">Alle Themen</option>
+      </select>
+      <span class="counter" id="card-counter">1 / 1</span>
+    </div>
+    <div class="progress"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="flashcard" onclick="toggleAnswer()">
+      <div class="card-badge" id="card-badge">Begriff</div>
+      <div class="card-q" id="card-q">–</div>
+      <div class="card-a" id="card-a">–</div>
+      <div class="flip-hint" id="flip-hint">Klicken zum Aufdecken</div>
+    </div>
+    <div class="card-btns" id="btns-before">
+      <button class="cbtn" onclick="prevCard()">← Zurück</button>
+      <button class="cbtn reveal" onclick="toggleAnswer()">Antwort zeigen</button>
+      <button class="cbtn" onclick="nextCard()">Weiter →</button>
+    </div>
+    <div class="card-btns" id="btns-after" style="display:none">
+      <button class="cbtn bad" onclick="markCard(false)">✗ Nochmal</button>
+      <button class="cbtn good" onclick="markCard(true)">✓ Gewusst</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="screen" id="screen-quiz">
+    <div id="quiz-main">
+      <div class="quiz-stats">
+        <span class="stat-pill total" id="q-total">Frage 1 / 20</span>
+        <span class="stat-pill right" id="q-right">✓ 0 richtig</span>
+        <span class="stat-pill wrong" id="q-wrong">✗ 0 falsch</span>
+      </div>
+      <div class="quiz-q" id="quiz-question">–</div>
+      <div class="quiz-opts" id="quiz-opts"></div>
+      <div class="quiz-fb" id="quiz-fb"></div>
+      <button class="next-btn" id="quiz-next" onclick="nextQuestion()">Nächste Frage →</button>
+    </div>
+    <div class="quiz-end" id="quiz-end" style="display:none">
+      <div style="font-size:15px;color:var(--text2)">Quiz abgeschlossen!</div>
+      <div class="end-score" id="end-score">–</div>
+      <div class="end-label" id="end-label">–</div>
+      <div class="end-btns">
+        <button class="end-btn primary" onclick="startQuiz()">Wiederholen</button>
+        <button class="end-btn secondary" onclick="showScreen('cards')">Lernkarten</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KALKULATOR -->
+  <div class="screen" id="screen-calc">
+    <div class="calc-tabs">
+      <button class="ctab active" onclick="showCalc('ersatz','this')">🔄 Ersatzinvestition</button>
+      <button class="ctab" onclick="showCalc('ration','this')">⚡ Rationalisierung</button>
+    </div>
+
+    <!-- Ersatzinvestition -->
+    <div class="calc-screen active" id="calc-ersatz">
+      <div class="calc-info">Vergleich zweier neuer Maschinen (Ersatzinvestition). Beide starten bei 0. Kapitalkosten: kalk. Abschreibung + kalk. Zinsen.</div>
+      <div class="calc-grid">
+        <div class="calc-col">
+          <div class="calc-col-title">⚙ Maschine A</div>
+          <div class="inp-row"><span class="inp-label">Anschaffungskosten (netto)</span><input class="inp-val" id="ea-aw" type="number" value="483500" step="100"></div>
+          <div class="inp-row"><span class="inp-label">Restverkaufserlös</span><input class="inp-val" id="ea-rw" type="number" value="87500" step="100"></div>
+          <div class="inp-row"><span class="inp-label">Nutzungsdauer (Jahre)</span><input class="inp-val" id="ea-nd" type="number" value="6" step="1"></div>
+          <div class="inp-row"><span class="inp-label">Zinssatz (%)</span><input class="inp-val" id="ea-zi" type="number" value="6" step="0.1"></div>
+          <div class="inp-row"><span class="inp-label">Fixe Betriebskosten/Jahr</span><input class="inp-val" id="ea-fix" type="number" value="22000" step="100"></div>
+          <div class="inp-row"><span class="inp-label">Variable Kosten/Stück</span><input class="inp-val" id="ea-kv" type="number" value="2.80" step="0.01"></div>
+        </div>
+        <div class="calc-col">
+          <div class="calc-col-title">⚙ Maschine B</div>
+          <div class="inp-row"><span class="inp-label">Anschaffungskosten (netto)</span><input class="inp-val" id="eb-aw" type="number" value="583500" step="100"></div>
+          <div class="inp-row"><span class="inp-label">Restverkaufserlös</span><input class="inp-val" id="eb-rw" type="number" value="151500" step="100"></div>
+          <div class="inp-row"><span class="inp-label">Nutzungsdauer (Jahre)</span><input class="inp-val" id="eb-nd" type="number" value="6" step="1"></div>
+          <div class="inp-row"><span class="inp-label">Zinssatz (%)</span><input class="inp-val" id="eb-zi" type="number" value="6" step="0.1"></div>
+          <div class="inp-row"><span class="inp-label">Fixe Betriebskosten/Jahr</span><input class="inp-val" id="eb-fix" type="number" value="26000" step="100"></div>
+          <div class="inp-row"><span class="inp-label">Variable Kosten/Stück</span><input class="inp-val" id="eb-kv" type="number" value="2.50" step="0.01"></div>
+        </div>
+      </div>
+      <div class="inp-row" style="max-width:320px"><span class="inp-label" style="font-weight:600;color:var(--text)">Geplante Absatzmenge</span><input class="inp-val" id="e-menge" type="number" value="45000" step="1000"></div>
+      <button class="btn-calc" onclick="calcErsatz()">Berechnen</button>
+      <div id="e-result" style="display:none;margin-top:1.5rem">
+        <table class="result-table">
+          <thead><tr><td>Kostenart</td><td>Maschine A</td><td>Maschine B</td></tr></thead>
+          <tbody id="e-tbody"></tbody>
+        </table>
+        <div class="verdict" id="e-verdict"></div>
+      </div>
+    </div>
+
+    <!-- Rationalisierung -->
+    <div class="calc-screen" id="calc-ration">
+      <div class="calc-info">Vergleich Altanlage (C) vs. Neuanlage (D). Besonderheit: Bei der Altanlage wird kein Anschaffungspreis, sondern der aktuelle Marktwert (Liquidationserlös) als Basis angesetzt. Bilanzbuchhalterische Abschreibungen sind irrelevant (Sunk Costs).</div>
+      <div class="calc-grid">
+        <div class="calc-col">
+          <div class="calc-col-title">📦 Altanlage (C)</div>
+          <div class="inp-row"><span class="inp-label">Marktwert heute (Liquidationserlös)</span><input class="inp-val" id="rc-aw" type="number" value="12000" step="100"></div>
+          <div class="inp-row"><span class="inp-label">Restwert am Ende</span><input class="inp-val" id="rc-rw" type="number" value="2000" step="100"></div>
+          <div class="inp-row"><span class="inp-label">Restnutzungsdauer (Jahre)</span><input class="inp-val" id="rc-nd" type="number" value="2" step="1"></div>
+          <div class="inp-row"><span class="inp-label">Zinssatz (%)</span><input class="inp-val" id="rc-zi" type="number" value="6" step="0.1"></div>
+          <div class="inp-row"><span class="inp-label">Fixe Betriebskosten/Jahr</span><input class="inp-val" id="rc-fix" type="number" value="40000" step="100"></div>
+          <div class="inp-row"><span class="inp-label">Variable Kosten/Stück</span><input class="inp-val" id="rc-kv" type="number" value="10.00" step="0.01"></div>
+        </div>
+        <div class="calc-col">
+          <div class="calc-col-title">🆕 Neuanlage (D)</div>
+          <div class="inp-row"><span class="inp-label">Anschaffungskosten (netto)</span><input class="inp-val" id="rd-aw" type="number" value="240000" step="100"></div>
+          <div class="inp-row"><span class="inp-label">Restverkaufserlös</span><input class="inp-val" id="rd-rw" type="number" value="12000" step="100"></div>
+          <div class="inp-row"><span class="inp-label">Nutzungsdauer (Jahre)</span><input class="inp-val" id="rd-nd" type="number" value="6" step="1"></div>
+          <div class="inp-row"><span class="inp-label">Zinssatz (%)</span><input class="inp-val" id="rd-zi" type="number" value="6" step="0.1"></div>
+          <div class="inp-row"><span class="inp-label">Fixe Betriebskosten/Jahr</span><input class="inp-val" id="rd-fix" type="number" value="38000" step="100"></div>
+          <div class="inp-row"><span class="inp-label">Variable Kosten/Stück</span><input class="inp-val" id="rd-kv" type="number" value="2.50" step="0.01"></div>
+        </div>
+      </div>
+      <div class="inp-row" style="max-width:320px"><span class="inp-label" style="font-weight:600;color:var(--text)">Geplante Absatzmenge</span><input class="inp-val" id="r-menge" type="number" value="6000" step="500"></div>
+      <button class="btn-calc" onclick="calcRation()">Berechnen</button>
+      <div id="r-result" style="display:none;margin-top:1.5rem">
+        <table class="result-table">
+          <thead><tr><td>Kostenart</td><td>Altanlage (C)</td><td>Neuanlage (D)</td></tr></thead>
+          <tbody id="r-tbody"></tbody>
+        </table>
+        <div class="verdict" id="r-verdict"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZUSAMMENFASSUNG -->
+  <div class="screen" id="screen-summary">
+    <div class="sum-section">
+      <div class="sum-h"><span>📋</span> Verfahren der Investitionsrechnung</div>
+      <div class="def-grid">
+        <div class="def-card"><div class="def-term">Statische Verfahren</div><div class="def-text">Vergleichen Durchschnittswerte einer Periode. Zeitwert des Geldes wird NICHT berücksichtigt. Einfacher, schneller.</div></div>
+        <div class="def-card"><div class="def-term">Dynamische Verfahren</div><div class="def-text">Berücksichtigen Zahlungszeitpunkte und rechnen auf einen Stichtag ab (Barwert). Zeitwert des Geldes wird BERÜCKSICHTIGT.</div></div>
+        <div class="def-card"><div class="def-term">Kostenvergleichsrechnung</div><div class="def-text">Statisches Verfahren: Welche Alternative ist pro Jahr kostengünstiger? Ergebnis: kostengünstigste Alternative.</div></div>
+        <div class="def-card"><div class="def-term">Amortisationsrechnung</div><div class="def-text">Statisches Verfahren: Nach welcher Zeit ist das Kapital zurückgeflossen? Fokus: Sicherheit/Liquidität.</div></div>
+        <div class="def-card"><div class="def-term">Kapitalwertmethode</div><div class="def-text">Dynamisches Verfahren: Barwert aller Ein-/Auszahlungen. Kapitalwert &gt; 0 = vorteilhaft.</div></div>
+      </div>
+    </div>
+    <div class="sum-section">
+      <div class="sum-h"><span>💰</span> Kapitalkosten – Formeln</div>
+      <div class="formula-box">Kalk. Abschreibung = <span>(AW − RW) / ND</span></div>
+      <div class="formula-box">Kalk. Zinsen = <span>(AW + RW) / 2 × i</span></div>
+      <div class="formula-box">Kritische Menge = <span>(Kfix_A − Kfix_B) / (kv_B − kv_A)</span></div>
+      <div class="formula-box">Gesamtkosten = <span>Kfix + kv × x</span></div>
+      <div class="def-grid" style="margin-top:1rem">
+        <div class="def-card"><div class="def-term">AW</div><div class="def-text">Anschaffungswert (Netto-Kaufpreis inkl. Inbetriebnahme, ohne USt.)</div></div>
+        <div class="def-card"><div class="def-term">RW</div><div class="def-text">Restwert / Restverkaufserlös am Ende der Nutzungsdauer</div></div>
+        <div class="def-card"><div class="def-term">ND</div><div class="def-text">Nutzungsdauer in Jahren</div></div>
+        <div class="def-card"><div class="def-term">i</div><div class="def-text">Kalkulatorischer Zinssatz (z. B. 0,06 für 6 %)</div></div>
+        <div class="def-card"><div class="def-term">Kfix</div><div class="def-text">Summe aller Fixkosten/Jahr (Abschreibung + Zinsen + fixe Betriebskosten)</div></div>
+        <div class="def-card"><div class="def-term">kv</div><div class="def-text">Variable Kosten je Stück (Lohn + Material + sonstige)</div></div>
+      </div>
+    </div>
+    <div class="sum-section">
+      <div class="sum-h"><span>🔄</span> Ersatzinvestition (Projekt 1.1)</div>
+      <div class="def-grid">
+        <div class="def-card"><div class="def-term">Investitionsanlass</div><div class="def-text">Irreparables Versagen der Altanlage. Ersatz ist zwingend (Muss-Entscheidung).</div></div>
+        <div class="def-card"><div class="def-term">Maschine A – Draumet</div><div class="def-text">AW: 483.500 € · RW: 87.500 € · kv: 2,80 €/Stück · Kfix: 105.130 €/Jahr</div></div>
+        <div class="def-card"><div class="def-term">Maschine B – AKSIS</div><div class="def-text">AW: 583.500 € · RW: 151.500 € · kv: 2,50 €/Stück · Kfix: 120.050 €/Jahr</div></div>
+        <div class="def-card"><div class="def-term">Ergebnis bei 45.000 Stück</div><div class="def-text">A: 231.130 € · B: 232.550 € → Maschine A ist um 1.420 €/Jahr günstiger</div></div>
+        <div class="def-card"><div class="def-term">Kritische Menge</div><div class="def-text">49.734 Stück. Ab dieser Menge ist Maschine B wirtschaftlicher.</div></div>
+        <div class="def-card"><div class="def-term">Strategische Überlegung</div><div class="def-text">Expansionskurs → Menge könnte kritische Schwelle überschreiten → Maschine B langfristig sinnvoller.</div></div>
+      </div>
+    </div>
+    <div class="sum-section">
+      <div class="sum-h"><span>⚡</span> Rationalisierungsinvestition</div>
+      <div class="def-grid">
+        <div class="def-card"><div class="def-term">Was ist eine Rationalisierungsinvestition?</div><div class="def-text">Vorzeitiger Ersatz einer noch funktionsfähigen Anlage durch eine wirtschaftlich überlegene. Kann-Entscheidung.</div></div>
+        <div class="def-card"><div class="def-term">Abgrenzung zur Ersatzinvestition</div><div class="def-text">Ersatz: Altanlage defekt (Muss). Rationalisierung: Altanlage läuft noch, aber neue ist effizienter (Kann).</div></div>
+        <div class="def-card"><div class="def-term">Sunk Costs</div><div class="def-text">Bisherige Abschreibungen (Buchwert) sind bereits entstandene Kosten, die nicht mehr beeinflusst werden können. Für die Entscheidung irrelevant.</div></div>
+        <div class="def-card"><div class="def-term">Richtiger Wertansatz Altanlage</div><div class="def-text">Liquidationserlös (Marktwert) = Opportunitätskosten. Nicht der Buchwert/Bilanzwert!</div></div>
+        <div class="def-card"><div class="def-term">Minderung Liquidationserlös</div><div class="def-text">Statt kalk. Abschreibung: (Marktwert − Restwert) / Restnutzungsdauer. Bildet den echten jährlichen Wertverlust ab.</div></div>
+        <div class="def-card"><div class="def-term">Ergebnis Montageautomat</div><div class="def-text">C: 105.420 €/Jahr · D: 98.560 €/Jahr → Neuanlage spart 6.860 €/Jahr. Sofortiger Austausch lohnt sich.</div></div>
+      </div>
+    </div>
+    <div class="sum-section">
+      <div class="sum-h"><span>⚠️</span> Grenzen der Kostenvergleichsrechnung</div>
+      <div class="def-grid">
+        <div class="def-card"><div class="def-term">Faktor Zeit (Statik)</div><div class="def-text">Zeitwert des Geldes wird ignoriert. Künftige Zahlungen werden nicht abgezinst – dynamische Verfahren sind präziser.</div></div>
+        <div class="def-card"><div class="def-term">Einseitige Kostensicht</div><div class="def-text">Nur Kosten werden verglichen – mögliche Erlösunterschiede (z. B. durch höhere Kapazität) bleiben unberücksichtigt.</div></div>
+        <div class="def-card"><div class="def-term">Unsicherheit der Planwerte</div><div class="def-text">Alle Werte (Resterlös, Laufzeit, Auslastung) sind Prognosen. Abweichungen können die Entscheidung kippen.</div></div>
+        <div class="def-card"><div class="def-term">Qualitative Faktoren fehlen</div><div class="def-text">Flexibilität, Zukunftssicherheit, Skalierbarkeit oder strategische Bedeutung werden nicht abgebildet.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const topics = [
+  {name:'Grundlagen', cards:[
+    {q:'Was ist der Unterschied zwischen statischen und dynamischen Verfahren?', a:'Statisch: Vergleich von Durchschnittswerten einer Periode, Zeitwert des Geldes wird NICHT berücksichtigt. Dynamisch: Zahlungszeitpunkte werden berücksichtigt, Abzinsung auf einen Stichtag (Barwert).'},
+    {q:'Wann eignet sich die Kostenvergleichsrechnung?', a:'Bei Investitionsvergleichen mit ähnlichen Produkten und bekannten Kosten. Geeignet wenn keine dynamische Abzinsung nötig ist – schnelle, übersichtliche Entscheidung für kostengünstigste Alternative.'},
+    {q:'Was ist das Ergebnis einer Kostenvergleichsrechnung?', a:'Die kostengünstigste Alternative wird identifiziert. Ergebnis: Gesamtkosten pro Jahr (und Stückkosten). Die Alternative mit niedrigeren Gesamtkosten bei der geplanten Menge ist vorzuziehen.'},
+    {q:'Was ist die Amortisationsrechnung?', a:'Ein statisches Verfahren, das ermittelt, nach welcher Zeit das eingesetzte Kapital durch Rückflüsse zurückgeflossen ist. Fokus auf Sicherheit und Liquidität: je kürzer, desto sicherer.'},
+    {q:'Was ist die Kapitalwertmethode?', a:'Ein dynamisches Verfahren. Alle zukünftigen Zahlungsströme werden auf t0 abgezinst (Barwert). Kapitalwert > 0 = Investition ist vorteilhaft.'},
+    {q:'Was versteht man unter „kritischer Menge"?', a:'Die Produktionsmenge, bei der zwei Alternativen identische Gesamtkosten haben. Unterhalb: Alternative mit niedrigeren Fixkosten ist günstiger. Oberhalb: Alternative mit niedrigeren variablen Kosten ist günstiger.'},
+  ]},
+  {name:'Kapitalkosten', cards:[
+    {q:'Wie berechnet sich die kalkulatorische Abschreibung?', a:'(Anschaffungskosten − Restwert) / Nutzungsdauer. Sie bildet den durchschnittlichen jährlichen Wertverzehr ab. Achtung: Von den Netto-Anschaffungskosten (ohne USt.)!'},
+    {q:'Wie berechnet sich die kalkulatorische Zinsen?', a:'(Anschaffungskosten + Restwert) / 2 × Zinssatz. Der Nenner 2 ergibt das durchschnittlich gebundene Kapital über die gesamte Nutzungsdauer.'},
+    {q:'Warum werden bei der Industriekalkulation kalk. Abschreibungen von den Anschaffungskosten berechnet?', a:'In der Investitionsrechnung geht es um die tatsächlichen Anschaffungskosten (nicht Wiederbeschaffungswert). Es soll der echte Kapitalverzehr der Investitionsentscheidung abgebildet werden.'},
+    {q:'Was sind fixe Kapitalkosten?', a:'Kalkulatorische Abschreibung + Kalkulatorische Zinsen. Sie fallen unabhängig von der Produktionsmenge an und gehören zu den Fixkosten.'},
+    {q:'Was passiert mit den Kapitalkosten, wenn der Restwert steigt?', a:'Höherer Restwert → niedrigere Abschreibung (Differenz AW−RW kleiner). Aber: Kalk. Zinsen steigen leicht (höherer Durchschnittswert). Per saldo sinken die Kapitalkosten in der Regel.'},
+    {q:'Warum gehören Inbetriebnahmekosten zu den Anschaffungskosten?', a:'Kosten wie Einweisung und Inbetriebnahme sind notwendig, um die Maschine betriebsbereit zu machen. Sie erhöhen den relevanten Anschaffungswert für die Kalkulation.'},
+  ]},
+  {name:'Ersatzinvestition', cards:[
+    {q:'Was ist eine Ersatzinvestition?', a:'Erneuerung einer defekten oder nicht mehr wirtschaftlich reparierbaren Anlage durch eine gleichwertige. Es handelt sich um eine Muss-Entscheidung, da die Produktion sonst nicht aufrechterhalten werden kann.'},
+    {q:'Welche Maschine ist bei der GastroBotics-Ersatzinvestition bei 45.000 Stück günstiger?', a:'Maschine A (Draumet) mit Gesamtkosten von 231.130 €/Jahr ist um 1.420 €/Jahr günstiger als Maschine B (AKSIS, 232.550 €). Die Planmenge liegt unterhalb der kritischen Menge von 49.734 Stück.'},
+    {q:'Wie lautet die Kostenfunktion von Maschine A?', a:'K_A(x) = 105.130 + 2,80 · x. Der Fixkostenblock beträgt 105.130 €/Jahr, die variablen Kosten 2,80 €/Stück.'},
+    {q:'Warum könnte Maschine B trotz höherer Gesamtkosten bei 45.000 Stück strategisch sinnvoller sein?', a:'GastroBotics verfolgt einen Expansionskurs. Bei steigender Auslastung über 49.734 Stück wird Maschine B günstiger. Zudem ist Maschine B modular erweiterbar, während A fixe Kapazitäten hat.'},
+    {q:'Was sind die drei methodischen Grenzen der Kostenvergleichsrechnung?', a:'1. Zeitwert des Geldes wird ignoriert (statisch). 2. Nur Kosten werden verglichen – Erlösdifferenzen fehlen. 3. Planwerte (Resterlös, Laufzeit) sind unsichere Prognosen.'},
+    {q:'Warum sind Inbetriebnahmekosten bei der Kalkulation zu berücksichtigen?', a:'Die Kosten für Einweisung und Inbetriebnahme (3.500 € netto) sind Bestandteil des Anschaffungswertes, da sie erforderlich sind, um die Maschine betriebsbereit zu machen.'},
+  ]},
+  {name:'Rationalisierungsinvestition', cards:[
+    {q:'Was ist der Unterschied zwischen Rationalisierungs- und Ersatzinvestition?', a:'Ersatz: Altanlage ist defekt – Muss-Entscheidung. Rationalisierung: Altanlage funktioniert noch, eine neue ist aber wirtschaftlich überlegen – Kann-Entscheidung. Die Frage lautet: Lohnt sich der vorzeitige Austausch?'},
+    {q:'Was sind Sunk Costs und warum sind sie bei der Rationalisierung irrelevant?', a:'Sunk Costs (versunkene Kosten) sind Ausgaben aus der Vergangenheit, die nicht mehr rückgängig gemacht werden können (z. B. bereits bezahlte Abschreibungen). Sie beeinflussen die Zukunftsentscheidung nicht und bleiben daher außer Ansatz.'},
+    {q:'Welcher Wert wird für die Altanlage bei einer Rationalisierungsrechnung angesetzt?', a:'Der aktuelle Marktwert (Liquidationserlös), nicht der Buchwert! Der Marktwert stellt die Opportunitätskosten dar: Wird die Altanlage weiter betrieben, verzichtet man auf diesen Verkaufserlös.'},
+    {q:'Was ist die „Minderung des Liquidationserlöses"?', a:'Ersatz für die kalk. Abschreibung bei der Altanlage. Formel: (Marktwert heute − Restwert am Ende) / Restnutzungsdauer. Bildet den jährlichen Wertverlust der Altanlage ab.'},
+    {q:'Warum ist der Bilanzwert (Buchwert) für die Investitionsentscheidung nicht relevant?', a:'Der Buchwert ergibt sich aus historischen Abschreibungen und stellt vergangene Kosten dar (Sunk Costs). Für Zukunftsentscheidungen zählt nur der aktuelle Marktpreis (Opportunitätskosten).'},
+    {q:'Was ist das Ergebnis der Rationalisierungsrechnung beim Montageautomaten?', a:'Altanlage C: 105.420 €/Jahr. Neuanlage D: 98.560 €/Jahr. Ersparnis: 6.860 €/Jahr. Der sofortige Austausch lohnt sich – die enorme Senkung der variablen Kosten von 10,00 € auf 2,50 €/Stück kompensiert die höheren Fixkosten.'},
+    {q:'Wann lohnt sich eine Rationalisierungsinvestition NICHT?', a:'Wenn die Produktionsmenge sehr gering ist und die hohen Fixkosten der Neuanlage nicht durch Einsparungen bei den variablen Kosten kompensiert werden können. Beispiel Übungsaufgabe: Bei 6.000 Stück ist die Altanlage A mit 49,96 €/Stück günstiger als Neuanlage B mit 55,00 €/Stück.'},
+  ]},
+];
+
+let allCards=[];
+topics.forEach(t=>t.cards.forEach(c=>allCards.push({...c,topic:t.name})));
+let currentCards=[],cardIdx=0;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function loadTopic(){
+  const v=document.getElementById('topic-sel').value;
+  currentCards=v==='all'?shuffle([...allCards]):shuffle([...topics[parseInt(v)].cards]);
+  cardIdx=0;showCard();
+}
+
+function showCard(){
+  if(!currentCards.length)return;
+  const c=currentCards[cardIdx];
+  document.getElementById('card-badge').textContent=c.topic||'Begriff';
+  document.getElementById('card-q').textContent=c.q;
+  document.getElementById('card-a').textContent=c.a;
+  document.getElementById('card-a').classList.remove('show');
+  document.getElementById('flip-hint').textContent='Klicken zum Aufdecken';
+  document.getElementById('btns-before').style.display='flex';
+  document.getElementById('btns-after').style.display='none';
+  const t=currentCards.length;
+  document.getElementById('card-counter').textContent=(cardIdx+1)+' / '+t;
+  document.getElementById('prog-fill').style.width=((cardIdx+1)/t*100)+'%';
+}
+
+function toggleAnswer(){
+  const a=document.getElementById('card-a');
+  if(a.classList.contains('show'))return;
+  a.classList.add('show');
+  document.getElementById('flip-hint').textContent='';
+  document.getElementById('btns-before').style.display='none';
+  document.getElementById('btns-after').style.display='flex';
+}
+function markCard(known){if(!known)currentCards.push(currentCards[cardIdx]);nextCard();}
+function nextCard(){if(cardIdx<currentCards.length-1){cardIdx++;showCard();}}
+function prevCard(){if(cardIdx>0){cardIdx--;showCard();}}
+
+// Quiz
+const quizPool=[];
+topics.forEach(t=>{
+  t.cards.forEach(c=>{
+    const wrongs=shuffle(allCards.filter(x=>x.q!==c.q)).slice(0,3).map(x=>x.a.substring(0,90)+'…');
+    const correct=c.a.substring(0,90)+'…';
+    quizPool.push({q:c.q,correct,opts:shuffle([correct,...wrongs])});
+  });
+});
+
+let quizQs=[],qIdx=0,qRight=0,qWrong=0,ans2=false;
+
+function startQuiz(){
+  quizQs=shuffle([...quizPool]).slice(0,20);
+  qIdx=0;qRight=0;qWrong=0;
+  document.getElementById('quiz-end').style.display='none';
+  document.getElementById('quiz-main').style.display='block';
+  showQuestion();
+}
+
+function showQuestion(){
+  ans2=false;
+  const q=quizQs[qIdx];
+  document.getElementById('quiz-question').textContent=q.q;
+  document.getElementById('q-total').textContent='Frage '+(qIdx+1)+' / '+quizQs.length;
+  document.getElementById('q-right').textContent='✓ '+qRight+' richtig';
+  document.getElementById('q-wrong').textContent='✗ '+qWrong+' falsch';
+  const el=document.getElementById('quiz-opts');
+  el.innerHTML='';
+  q.opts.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='qopt';btn.textContent=opt;
+    btn.onclick=()=>selectOpt(btn,opt,q.correct);
+    el.appendChild(btn);
+  });
+  document.getElementById('quiz-fb').style.display='none';
+  document.getElementById('quiz-next').style.display='none';
+}
+
+function selectOpt(btn,chosen,correct){
+  if(ans2)return;ans2=true;
+  document.querySelectorAll('.qopt').forEach(b=>b.classList.add('disabled'));
+  const fb=document.getElementById('quiz-fb');
+  if(chosen===correct){btn.classList.add('correct');qRight++;fb.className='quiz-fb ok';fb.textContent='✓ Richtig! '+correct;}
+  else{btn.classList.add('wrong');qWrong++;document.querySelectorAll('.qopt').forEach(b=>{if(b.textContent===correct)b.classList.add('correct');});fb.className='quiz-fb nok';fb.textContent='✗ Falsch. Richtig: '+correct;}
+  fb.style.display='block';
+  document.getElementById('q-right').textContent='✓ '+qRight+' richtig';
+  document.getElementById('q-wrong').textContent='✗ '+qWrong+' falsch';
+  document.getElementById('quiz-next').style.display='inline-block';
+}
+
+function nextQuestion(){qIdx++;if(qIdx>=quizQs.length)showQuizEnd();else showQuestion();}
+
+function showQuizEnd(){
+  document.getElementById('quiz-main').style.display='none';
+  const pct=Math.round(qRight/quizQs.length*100);
+  document.getElementById('end-score').textContent=pct+'%';
+  let label=pct>=80?'Ausgezeichnet! 🎉':pct>=60?'Gut gemacht! 👍':'Weiterüben! 📚';
+  document.getElementById('end-label').textContent=qRight+' von '+quizQs.length+' richtig – '+label;
+  document.getElementById('quiz-end').style.display='block';
+}
+
+function fmt(n){return n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
+
+function addRow(tbody, label, a, b, bold, winner){
+  const tr=document.createElement('tr');
+  if(winner)tr.className='winner';
+  else if(bold)tr.className='bold';
+  tr.innerHTML=`<td>${label}</td><td>${fmt(a)}</td><td>${fmt(b)}</td>`;
+  tbody.appendChild(tr);
+}
+
+function calcErsatz(){
+  const g=id=>parseFloat(document.getElementById(id).value)||0;
+  const awA=g('ea-aw'),rwA=g('ea-rw'),ndA=g('ea-nd'),ziA=g('ea-zi')/100;
+  const awB=g('eb-aw'),rwB=g('eb-rw'),ndB=g('eb-nd'),ziB=g('eb-zi')/100;
+  const fixA=g('ea-fix'),kvA=g('ea-kv');
+  const fixB=g('eb-fix'),kvB=g('eb-kv');
+  const x=g('e-menge');
+
+  const abA=(awA-rwA)/ndA, abB=(awB-rwB)/ndB;
+  const zinA=(awA+rwA)/2*ziA, zinB=(awB+rwB)/2*ziB;
+  const kfixA=abA+zinA+fixA, kfixB=abB+zinB+fixB;
+  const kvgA=kvA*x, kvgB=kvB*x;
+  const kgesA=kfixA+kvgA, kgesB=kfixB+kvgB;
+  const skA=kfixA/x+kvA, skB=kfixB/x+kvB;
+  let xkrit=null;
+  if(kvA!==kvB) xkrit=(kfixA-kfixB)/(kvB-kvA);
+
+  const tb=document.getElementById('e-tbody');
+  tb.innerHTML='';
+  addRow(tb,'Kalk. Abschreibung',abA,abB,false);
+  addRow(tb,'Kalk. Zinsen',zinA,zinB,false);
+  addRow(tb,'Fixe Betriebskosten',fixA,fixB,false);
+  addRow(tb,'Summe Fixkosten',kfixA,kfixB,true);
+  addRow(tb,`Variable Kosten (${x.toLocaleString('de-DE')} Stück)`,kvgA,kvgB,false);
+  addRow(tb,'Gesamtkosten/Jahr',kgesA,kgesB,true,true);
+  addRow(tb,'Stückkosten',skA,skB,false);
+
+  const v=document.getElementById('e-verdict');
+  const winner=kgesA<=kgesB?'A':'B';
+  const diff=Math.abs(kgesA-kgesB);
+  let txt=`Bei der geplanten Menge von ${x.toLocaleString('de-DE')} Stück ist Maschine ${winner} mit ${fmt(Math.min(kgesA,kgesB))} günstiger (Differenz: ${fmt(diff)}/Jahr).`;
+  if(xkrit!==null) txt+=` Kritische Menge: ${Math.round(xkrit).toLocaleString('de-DE')} Stück.`;
+  v.textContent=txt;
+  v.style.display='block';
+  document.getElementById('e-result').style.display='block';
+}
+
+function calcRation(){
+  const g=id=>parseFloat(document.getElementById(id).value)||0;
+  const awC=g('rc-aw'),rwC=g('rc-rw'),ndC=g('rc-nd'),ziC=g('rc-zi')/100;
+  const awD=g('rd-aw'),rwD=g('rd-rw'),ndD=g('rd-nd'),ziD=g('rd-zi')/100;
+  const fixC=g('rc-fix'),kvC=g('rc-kv');
+  const fixD=g('rd-fix'),kvD=g('rd-kv');
+  const x=g('r-menge');
+
+  // Altanlage: Minderung Liquidationserlös statt kalk. Abschreibung
+  const mle=(awC-rwC)/ndC;
+  const zinC=(awC+rwC)/2*ziC;
+  const abD=(awD-rwD)/ndD;
+  const zinD=(awD+rwD)/2*ziD;
+
+  const kfixC=mle+zinC+fixC;
+  const kfixD=abD+zinD+fixD;
+  const kvgC=kvC*x, kvgD=kvD*x;
+  const kgesC=kfixC+kvgC, kgesD=kfixD+kvgD;
+  const diff=kgesC-kgesD;
+
+  const tb=document.getElementById('r-tbody');
+  tb.innerHTML='';
+  const trC=document.createElement('tr');
+  trC.innerHTML=`<td>Minderung Liquidationserlös</td><td>${fmt(mle)}</td><td>–</td>`;
+  tb.appendChild(trC);
+  const trD=document.createElement('tr');
+  trD.innerHTML=`<td>Kalk. Abschreibung</td><td>–</td><td>${fmt(abD)}</td>`;
+  tb.appendChild(trD);
+  addRow(tb,'Kalk. Zinsen',zinC,zinD,false);
+  addRow(tb,'Fixe Betriebskosten',fixC,fixD,false);
+  addRow(tb,'Summe Fixkosten',kfixC,kfixD,true);
+  addRow(tb,`Variable Kosten (${x.toLocaleString('de-DE')} Stück)`,kvgC,kvgD,false);
+  addRow(tb,'Gesamtkosten/Jahr',kgesC,kgesD,true,true);
+
+  const v=document.getElementById('r-verdict');
+  if(diff>0){
+    v.textContent=`Die Neuanlage D spart ${fmt(diff)}/Jahr. Der sofortige Austausch ist wirtschaftlich sinnvoll.`;
+  } else if(diff<0){
+    v.textContent=`Die Altanlage C ist um ${fmt(Math.abs(diff))}/Jahr günstiger. Ein sofortiger Austausch lohnt sich bei dieser Auslastung NICHT.`;
+  } else {
+    v.textContent='Beide Anlagen haben identische Gesamtkosten – kein wirtschaftlicher Vorteil.';
+  }
+  v.style.display='block';
+  document.getElementById('r-result').style.display='block';
+}
+
+function showCalc(name, btn){
+  document.querySelectorAll('.ctab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.calc-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('calc-'+name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='quiz'&&qIdx===0&&!ans2)startQuiz();
+}
+
+function goCards(idx){
+  showScreen('cards');
+  document.getElementById('topic-sel').value=idx;
+  loadTopic();
+}
+
+loadTopic();
+</script>
+</body>
+</html>
