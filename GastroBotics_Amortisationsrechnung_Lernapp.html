@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GastroBotics – Amortisationsrechnung Lernapp</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f1a;
+  --surface:#14162a;
+  --surface2:#1c1f36;
+  --border:#252840;
+  --accent:#6c8ef5;
+  --accent-light:#99b3ff;
+  --accent-dim:#111630;
+  --green:#3ecf8e;
+  --green-dim:#0d2e1f;
+  --red:#f56565;
+  --red-dim:#2e0d0d;
+  --amber:#f0a500;
+  --amber-dim:#2e2000;
+  --text:#dde2f5;
+  --text2:#7a85b8;
+  --text3:#3d4470;
+  --radius:12px;
+  --radius-sm:8px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6}
+.app{max-width:860px;margin:0 auto;padding:2rem 1.5rem 4rem}
+
+.header{display:flex;align-items:center;gap:14px;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.logo{width:44px;height:44px;border-radius:var(--radius-sm);background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:22px}
+.header-text h1{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400;color:var(--text)}
+.header-text p{font-size:13px;color:var(--text2)}
+
+.nav{display:flex;gap:6px;margin-bottom:2rem;flex-wrap:wrap}
+.nav-btn{padding:8px 18px;border-radius:40px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.nav-btn:hover{border-color:var(--accent);color:var(--text)}
+.nav-btn.active{background:var(--accent);border-color:var(--accent);color:#060a1f;font-weight:600}
+
+.screen{display:none}
+.screen.active{display:block}
+
+/* Overview */
+.topic-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.topic-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.topic-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .25s}
+.topic-card:hover{border-color:var(--accent);background:var(--surface2)}
+.topic-card:hover::before{transform:scaleX(1)}
+.topic-card.cta{border-color:var(--accent);background:var(--accent-dim)}
+.topic-card.cta .topic-title,.topic-card.cta .topic-icon{color:var(--accent-light)}
+.topic-icon{font-size:26px;margin-bottom:10px}
+.topic-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:5px}
+.topic-count{font-size:12px;color:var(--text2)}
+
+/* Flashcards */
+.card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:10px}
+.topic-sel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);cursor:pointer}
+.topic-sel:focus{outline:none;border-color:var(--accent)}
+.counter{font-size:13px;color:var(--text2)}
+.progress{height:3px;background:var(--surface2);border-radius:2px;margin-bottom:1.5rem}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .35s}
+.flashcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;min-height:200px;cursor:pointer;transition:border-color .2s}
+.flashcard:hover{border-color:var(--accent)}
+.card-badge{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-light);background:var(--accent-dim);padding:3px 10px;border-radius:20px;margin-bottom:14px}
+.card-q{font-size:16px;font-weight:500;color:var(--text);line-height:1.6}
+.card-a{font-size:14px;color:var(--text2);line-height:1.7;margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid var(--border);display:none}
+.card-a.show{display:block}
+.flip-hint{font-size:12px;color:var(--text3);text-align:center;margin-top:1.5rem}
+.card-btns{display:flex;gap:8px;margin-top:1rem;justify-content:center;flex-wrap:wrap}
+.cbtn{padding:9px 22px;border-radius:40px;border:1px solid var(--border);background:transparent;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;color:var(--text)}
+.cbtn:hover{background:var(--surface2)}
+.cbtn.reveal{border-color:var(--accent);color:var(--accent-light)}
+.cbtn.reveal:hover{background:var(--accent-dim)}
+.cbtn.good{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+.cbtn.bad{border-color:var(--red);color:var(--red);background:var(--red-dim)}
+
+/* Quiz */
+.quiz-stats{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
+.stat-pill{padding:4px 14px;border-radius:20px;font-size:13px;font-weight:500}
+.stat-pill.total{background:var(--accent-dim);color:var(--accent-light)}
+.stat-pill.right{background:var(--green-dim);color:var(--green)}
+.stat-pill.wrong{background:var(--red-dim);color:var(--red)}
+.quiz-q{font-size:15px;font-weight:500;color:var(--text);margin-bottom:1.5rem;line-height:1.6;padding:1.5rem;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem}
+.qopt{padding:12px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;text-align:left;transition:all .2s;line-height:1.5}
+.qopt:hover:not(.disabled){border-color:var(--accent);background:var(--accent-dim)}
+.qopt.correct{background:var(--green-dim);border-color:var(--green);color:var(--green);pointer-events:none}
+.qopt.wrong{background:var(--red-dim);border-color:var(--red);color:var(--red);pointer-events:none}
+.qopt.disabled{pointer-events:none;opacity:.5}
+.quiz-fb{padding:12px 16px;border-radius:var(--radius-sm);font-size:14px;margin-bottom:1rem;line-height:1.6;display:none}
+.quiz-fb.ok{background:var(--green-dim);color:var(--green);border:1px solid var(--green)}
+.quiz-fb.nok{background:var(--red-dim);color:var(--red);border:1px solid var(--red)}
+.next-btn{padding:10px 28px;border-radius:40px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent-light);font-size:14px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;transition:all .2s;display:none}
+.next-btn:hover{background:var(--accent);color:#060a1f}
+.quiz-end{text-align:center;padding:3rem 1rem}
+.end-score{font-family:'DM Serif Display',serif;font-size:72px;color:var(--accent-light);margin:1rem 0 .5rem}
+.end-label{font-size:16px;color:var(--text2);margin-bottom:2rem}
+.end-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.end-btn{padding:10px 24px;border-radius:40px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;transition:all .2s}
+.end-btn.primary{background:var(--accent);border:none;color:#060a1f}
+.end-btn.primary:hover{opacity:.85}
+.end-btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.end-btn.secondary:hover{border-color:var(--accent);color:var(--text)}
+
+/* Kalkulator */
+.calc-tabs{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
+.ctab{padding:7px 16px;border-radius:40px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s}
+.ctab.active{background:var(--accent);border-color:var(--accent);color:#060a1f;font-weight:600}
+.calc-screen{display:none}
+.calc-screen.active{display:block}
+.calc-info{font-size:13px;color:var(--text2);margin-bottom:1.2rem;padding:10px 14px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);line-height:1.6}
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1rem}
+@media(max-width:600px){.calc-grid{grid-template-columns:1fr}}
+.calc-col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem}
+.calc-col-title{font-size:13px;font-weight:600;color:var(--accent-light);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.05em}
+.inp-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem;gap:8px;flex-wrap:wrap}
+.inp-label{font-size:13px;color:var(--text2);flex:1;min-width:130px}
+.inp-val{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:5px 8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;width:120px;text-align:right}
+.inp-val:focus{outline:none;border-color:var(--accent)}
+.step-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;margin-top:1.2rem;font-size:14px}
+.step-title{font-size:12px;font-weight:600;color:var(--accent-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.8rem}
+.step-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);color:var(--text2)}
+.step-row:last-child{border:none}
+.step-row.bold{font-weight:600;color:var(--text)}
+.step-row.result{font-weight:600;color:var(--accent-light);background:var(--accent-dim);padding:8px 10px;border-radius:var(--radius-sm);margin-top:.5rem}
+.verdict{margin-top:1.2rem;padding:12px 16px;border-radius:var(--radius-sm);font-size:14px;line-height:1.6;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent-light);display:none}
+.verdict.ok{border-color:var(--green);background:var(--green-dim);color:var(--green)}
+.verdict.nok{border-color:var(--red);background:var(--red-dim);color:var(--red)}
+.verdict.warn{border-color:var(--amber);background:var(--amber-dim);color:var(--amber)}
+.btn-calc{padding:9px 24px;border-radius:40px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent-light);font-size:14px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;margin-top:.8rem;transition:all .2s}
+.btn-calc:hover{background:var(--accent);color:#060a1f}
+
+/* Summary */
+.sum-section{margin-bottom:2rem}
+.sum-h{font-size:15px;font-weight:600;color:var(--text);margin-bottom:1rem;display:flex;align-items:center;gap:8px;padding-bottom:.6rem;border-bottom:1px solid var(--border)}
+.def-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.def-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem 1rem}
+.def-term{font-size:12px;font-weight:600;color:var(--accent-light);letter-spacing:.03em;margin-bottom:5px}
+.def-text{font-size:13px;color:var(--text2);line-height:1.55}
+.formula-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.9rem 1.2rem;font-size:13px;color:var(--text);margin-bottom:.8rem;line-height:1.8}
+.formula-box span{color:var(--accent-light);font-weight:600}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">⏱️</div>
+    <div class="header-text">
+      <h1>GastroBotics – Amortisationsrechnung</h1>
+      <p>Lernkarten · Quiz · Kalkulator · Zusammenfassung</p>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showScreen('overview')" id="tab-overview"><span>🗂</span> Übersicht</button>
+    <button class="nav-btn" onclick="showScreen('cards')" id="tab-cards"><span>🃏</span> Lernkarten</button>
+    <button class="nav-btn" onclick="showScreen('quiz')" id="tab-quiz"><span>❓</span> Quiz</button>
+    <button class="nav-btn" onclick="showScreen('calc')" id="tab-calc"><span>🧮</span> Kalkulator</button>
+    <button class="nav-btn" onclick="showScreen('summary')" id="tab-summary"><span>📖</span> Zusammenfassung</button>
+  </nav>
+
+  <!-- ÜBERSICHT -->
+  <div class="screen active" id="screen-overview">
+    <div class="topic-grid">
+      <div class="topic-card" onclick="goCards(0)">
+        <div class="topic-icon">📐</div>
+        <div class="topic-title">Grundlagen &amp; Konzept</div>
+        <div class="topic-count">Ziel · Amortisationszeit · statisch vs. dynamisch</div>
+      </div>
+      <div class="topic-card" onclick="goCards(1)">
+        <div class="topic-icon">💡</div>
+        <div class="topic-title">Einzahlungsüberschuss &amp; Abschreibung</div>
+        <div class="topic-count">Gewinn vs. Kapitalrückfluss · auszahlungswirksam</div>
+      </div>
+      <div class="topic-card" onclick="goCards(2)">
+        <div class="topic-icon">🏗️</div>
+        <div class="topic-title">Einzelinvestition</div>
+        <div class="topic-count">Formel · Fertigungsstraße Alt. 1 &amp; 2</div>
+      </div>
+      <div class="topic-card" onclick="goCards(3)">
+        <div class="topic-icon">⚡</div>
+        <div class="topic-title">Rationalisierungsinvestition</div>
+        <div class="topic-count">Kostenersparnis · zusätzliche Abschreibung</div>
+      </div>
+      <div class="topic-card" onclick="goCards(4)">
+        <div class="topic-icon">⚖️</div>
+        <div class="topic-title">Vor- &amp; Nachteile</div>
+        <div class="topic-count">Chancen · Grenzen · Kritik</div>
+      </div>
+      <div class="topic-card cta" onclick="showScreen('quiz')">
+        <div class="topic-icon">⭐</div>
+        <div class="topic-title">Quiz starten</div>
+        <div class="topic-count">Alle Themen · 20 Fragen</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LERNKARTEN -->
+  <div class="screen" id="screen-cards">
+    <div class="card-top">
+      <select class="topic-sel" id="topic-sel" onchange="loadTopic()">
+        <option value="0">Grundlagen &amp; Konzept</option>
+        <option value="1">Einzahlungsüberschuss &amp; Abschreibung</option>
+        <option value="2">Einzelinvestition</option>
+        <option value="3">Rationalisierungsinvestition</option>
+        <option value="4">Vor- &amp; Nachteile</option>
+        <option value="all">Alle Themen</option>
+      </select>
+      <span class="counter" id="card-counter">1 / 1</span>
+    </div>
+    <div class="progress"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="flashcard" onclick="toggleAnswer()">
+      <div class="card-badge" id="card-badge">Begriff</div>
+      <div class="card-q" id="card-q">–</div>
+      <div class="card-a" id="card-a">–</div>
+      <div class="flip-hint" id="flip-hint">Klicken zum Aufdecken</div>
+    </div>
+    <div class="card-btns" id="btns-before">
+      <button class="cbtn" onclick="prevCard()">← Zurück</button>
+      <button class="cbtn reveal" onclick="toggleAnswer()">Antwort zeigen</button>
+      <button class="cbtn" onclick="nextCard()">Weiter →</button>
+    </div>
+    <div class="card-btns" id="btns-after" style="display:none">
+      <button class="cbtn bad" onclick="markCard(false)">✗ Nochmal</button>
+      <button class="cbtn good" onclick="markCard(true)">✓ Gewusst</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="screen" id="screen-quiz">
+    <div id="quiz-main">
+      <div class="quiz-stats">
+        <span class="stat-pill total" id="q-total">Frage 1 / 20</span>
+        <span class="stat-pill right" id="q-right">✓ 0 richtig</span>
+        <span class="stat-pill wrong" id="q-wrong">✗ 0 falsch</span>
+      </div>
+      <div class="quiz-q" id="quiz-question">–</div>
+      <div class="quiz-opts" id="quiz-opts"></div>
+      <div class="quiz-fb" id="quiz-fb"></div>
+      <button class="next-btn" id="quiz-next" onclick="nextQuestion()">Nächste Frage →</button>
+    </div>
+    <div class="quiz-end" id="quiz-end" style="display:none">
+      <div style="font-size:15px;color:var(--text2)">Quiz abgeschlossen!</div>
+      <div class="end-score" id="end-score">–</div>
+      <div class="end-label" id="end-label">–</div>
+      <div class="end-btns">
+        <button class="end-btn primary" onclick="startQuiz()">Wiederholen</button>
+        <button class="end-btn secondary" onclick="showScreen('cards')">Lernkarten</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KALKULATOR -->
+  <div class="screen" id="screen-calc">
+    <div class="calc-tabs">
+      <button class="ctab active" onclick="switchCalc('einzel',event)">🏗️ Einzelinvestition</button>
+      <button class="ctab" onclick="switchCalc('ration',event)">⚡ Rationalisierung</button>
+    </div>
+
+    <!-- Einzelinvestition -->
+    <div class="calc-screen active" id="calc-einzel">
+      <div class="calc-info">Vergleich zweier Investitionsalternativen. Formel: t_w = (AW − RW) / (Gewinn/Jahr + kalk. Abschreibung). Ist Gewinn nicht gegeben, wird der Einzahlungsüberschuss (Einz. − Ausz.) verwendet.</div>
+      <div class="calc-grid">
+        <div class="calc-col">
+          <div class="calc-col-title">📦 Alternative 1</div>
+          <div class="inp-row"><span class="inp-label">Anschaffungsauszahlung</span><input class="inp-val" id="e1-aw" type="number" value="950000" step="1000"></div>
+          <div class="inp-row"><span class="inp-label">Restwert</span><input class="inp-val" id="e1-rw" type="number" value="50000" step="1000"></div>
+          <div class="inp-row"><span class="inp-label">Nutzungsdauer (Jahre)</span><input class="inp-val" id="e1-nd" type="number" value="10" step="1"></div>
+          <div class="inp-row"><span class="inp-label">Gewinn/Jahr (oder 0)</span><input class="inp-val" id="e1-gew" type="number" value="200000" step="1000"></div>
+          <div class="inp-row"><span class="inp-label">Einzahlungen/Jahr</span><input class="inp-val" id="e1-einz" type="number" value="0" step="1000"></div>
+          <div class="inp-row"><span class="inp-label">Auszahlungen/Jahr</span><input class="inp-val" id="e1-ausz" type="number" value="0" step="1000"></div>
+        </div>
+        <div class="calc-col">
+          <div class="calc-col-title">📦 Alternative 2</div>
+          <div class="inp-row"><span class="inp-label">Anschaffungsauszahlung</span><input class="inp-val" id="e2-aw" type="number" value="1100000" step="1000"></div>
+          <div class="inp-row"><span class="inp-label">Restwert</span><input class="inp-val" id="e2-rw" type="number" value="100000" step="1000"></div>
+          <div class="inp-row"><span class="inp-label">Nutzungsdauer (Jahre)</span><input class="inp-val" id="e2-nd" type="number" value="10" step="1"></div>
+          <div class="inp-row"><span class="inp-label">Gewinn/Jahr (oder 0)</span><input class="inp-val" id="e2-gew" type="number" value="0" step="1000"></div>
+          <div class="inp-row"><span class="inp-label">Einzahlungen/Jahr</span><input class="inp-val" id="e2-einz" type="number" value="550000" step="1000"></div>
+          <div class="inp-row"><span class="inp-label">Auszahlungen/Jahr</span><input class="inp-val" id="e2-ausz" type="number" value="220000" step="1000"></div>
+        </div>
+      </div>
+      <div class="inp-row" style="max-width:350px;margin-top:.5rem">
+        <span class="inp-label" style="font-weight:600;color:var(--text)">Max. Amortisationszeit (Jahre)</span>
+        <input class="inp-val" id="e-max" type="number" value="3.5" step="0.5">
+      </div>
+      <button class="btn-calc" onclick="calcEinzel()">Berechnen</button>
+      <div id="e-result" style="display:none;margin-top:1.5rem">
+        <div class="calc-grid">
+          <div class="step-box" id="e-steps1"></div>
+          <div class="step-box" id="e-steps2"></div>
+        </div>
+        <div class="verdict" id="e-verdict"></div>
+      </div>
+    </div>
+
+    <!-- Rationalisierung -->
+    <div class="calc-screen" id="calc-ration">
+      <div class="calc-info">Formel: t_w = (AW_neu − RW_alt) / (Kosteneinsparung + zusätzliche Abschreibung). Zusätzliche Abschreibung = Abschreibung neu − Abschreibung alt. Abschreibungen sind nicht auszahlungswirksam und werden deshalb zur Kosteneinsparung addiert.</div>
+      <div class="calc-col" style="margin-bottom:1rem">
+        <div class="calc-col-title">🆕 Neue Anlage</div>
+        <div class="inp-row"><span class="inp-label">Anschaffungsauszahlung (neu)</span><input class="inp-val" id="r-aw-neu" type="number" value="240000" step="1000"></div>
+        <div class="inp-row"><span class="inp-label">Restwert (neu, nach Nutzung)</span><input class="inp-val" id="r-rw-neu" type="number" value="12000" step="1000"></div>
+        <div class="inp-row"><span class="inp-label">Nutzungsdauer (Jahre)</span><input class="inp-val" id="r-nd-neu" type="number" value="6" step="1"></div>
+        <div class="inp-row"><span class="inp-label">Kosteneinsparung/Jahr</span><input class="inp-val" id="r-eins" type="number" value="80000" step="1000"></div>
+      </div>
+      <div class="calc-col" style="margin-bottom:1rem">
+        <div class="calc-col-title">📦 Alte Anlage</div>
+        <div class="inp-row"><span class="inp-label">Restwert alt (heute / Liquidationserlös)</span><input class="inp-val" id="r-rw-alt" type="number" value="15000" step="1000"></div>
+        <div class="inp-row"><span class="inp-label">Jährl. Abschreibung alt</span><input class="inp-val" id="r-ab-alt" type="number" value="30000" step="1000"></div>
+      </div>
+      <div class="inp-row" style="max-width:350px">
+        <span class="inp-label" style="font-weight:600;color:var(--text)">Max. Amortisationszeit (Jahre)</span>
+        <input class="inp-val" id="r-max" type="number" value="2.5" step="0.5">
+      </div>
+      <button class="btn-calc" onclick="calcRation()">Berechnen</button>
+      <div id="r-result" style="display:none;margin-top:1.5rem">
+        <div class="step-box" id="r-steps"></div>
+        <div class="verdict" id="r-verdict"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZUSAMMENFASSUNG -->
+  <div class="screen" id="screen-summary">
+    <div class="sum-section">
+      <div class="sum-h"><span>📐</span> Grundlagen</div>
+      <div class="def-grid">
+        <div class="def-card"><div class="def-term">Ziel der Amortisationsrechnung</div><div class="def-text">Ermitteln, wie lange es dauert bis eine Investition durch Einzahlungsüberschüsse vollständig zurückgeflossen ist.</div></div>
+        <div class="def-card"><div class="def-term">Amortisationszeit (t_w)</div><div class="def-text">Zeitraum, innerhalb dessen das eingesetzte Kapital durch Einzahlungsüberschüsse (Kapitalrückflüsse) gedeckt ist.</div></div>
+        <div class="def-card"><div class="def-term">Statisches Verfahren</div><div class="def-text">Es werden Durchschnittswerte einer Periode verglichen. Der Zeitwert des Geldes (Abzinsung) wird NICHT berücksichtigt.</div></div>
+        <div class="def-card"><div class="def-term">Entscheidungsregel</div><div class="def-text">Je geringer die Amortisationszeit, desto vorteilhafter die Investition. Bei mehreren Alternativen: kürzeste Zeit gewinnt. Eine maximale Amortisationszeit kann als Grenze gesetzt werden.</div></div>
+      </div>
+    </div>
+    <div class="sum-section">
+      <div class="sum-h"><span>💡</span> Formeln</div>
+      <div class="formula-box">
+        <strong>Einzelinvestition (Gewinn bekannt):</strong><br>
+        t_w = <span>(AW − RW) / (Ø Gewinn/Jahr + jährl. Abschreibung)</span>
+      </div>
+      <div class="formula-box">
+        <strong>Einzelinvestition (Einzahlungsüberschuss):</strong><br>
+        t_w = <span>(AW − RW) / Ø Kapitalrückfluss/Jahr</span><br>
+        Kapitalrückfluss = Einzahlungen − Auszahlungen (ohne Abschreibung!)
+      </div>
+      <div class="formula-box">
+        <strong>Rationalisierungsinvestition:</strong><br>
+        t_w = <span>(AW_neu − RW_alt) / (Kosteneinsparung + zusätzl. Abschreibung)</span><br>
+        Zusätzl. Abschreibung = Abschr. neu − Abschr. alt
+      </div>
+      <div class="formula-box">
+        <strong>Warum Abschreibung zum Gewinn addieren?</strong><br>
+        Abschreibungen sind <span>nicht auszahlungswirksam</span> – sie mindern den Gewinn, fließen aber nicht ab. Für den tatsächlichen Kapitalrückfluss müssen sie zum Gewinn hinzugerechnet werden.
+      </div>
+    </div>
+    <div class="sum-section">
+      <div class="sum-h"><span>🏗️</span> Rechenbeispiele aus dem Unterricht</div>
+      <div class="def-grid">
+        <div class="def-card"><div class="def-term">Alternative 1 – Fertigungsstraße</div><div class="def-text">AW: 950.000 € · RW: 50.000 € · Gewinn: 200.000 €/J · Abschr.: 90.000 €/J → t_w = 3,10 Jahre ✓</div></div>
+        <div class="def-card"><div class="def-term">Alternative 2 – Fertigungsstraße</div><div class="def-text">AW: 1.100.000 € · RW: 100.000 € · Einz.übers.: 330.000 €/J → t_w = 3,03 Jahre ✓ (Beide &lt; 3,5 J, Alt. 2 kürzer)</div></div>
+        <div class="def-card"><div class="def-term">Montageautomat (Rationalisierung)</div><div class="def-text">AW: 240.000 € · RW_alt: 15.000 € · Einspar.: 80.000 € · Zusatzabschr.: 8.000 € → t_w = 2,56 Jahre ≈ OK</div></div>
+      </div>
+    </div>
+    <div class="sum-section">
+      <div class="sum-h"><span>⚖️</span> Vor- und Nachteile</div>
+      <div class="def-grid">
+        <div class="def-card"><div class="def-term">✅ Einfachheit</div><div class="def-text">Leicht verständlich, wenig Rechenaufwand, schnell durchführbar.</div></div>
+        <div class="def-card"><div class="def-term">✅ Risikobeurteilung</div><div class="def-text">Zeigt, wie lange Kapital gebunden ist – dient als Maßstab für unternehmerisches Risiko.</div></div>
+        <div class="def-card"><div class="def-term">✅ Liquiditätsfokus</div><div class="def-text">Stellt den Kapitalrückfluss in den Vordergrund – wichtig für die Liquiditätsplanung.</div></div>
+        <div class="def-card"><div class="def-term">✅ Klare Entscheidungskriterien</div><div class="def-text">Vorgabe einer maximalen Amortisationszeit ermöglicht ein eindeutiges Ja/Nein-Kriterium.</div></div>
+        <div class="def-card"><div class="def-term">❌ Kein Zeitwert des Geldes</div><div class="def-text">Statisches Verfahren: Zahlungszeitpunkte werden ignoriert, keine Abzinsung.</div></div>
+        <div class="def-card"><div class="def-term">❌ Keine Aussage zur Rentabilität</div><div class="def-text">Es wird nur der Zeitpunkt der Rückgewinnung ermittelt – nicht wie viel Gewinn über die Gesamtlaufzeit entsteht.</div></div>
+        <div class="def-card"><div class="def-term">❌ Schätzfehler</div><div class="def-text">Prognose von Ein- und Auszahlungen ist schwierig; Schwankungen werden durch Durchschnittswerte verdeckt.</div></div>
+        <div class="def-card"><div class="def-term">❌ Willkürliche Amortisationszeit</div><div class="def-text">Die Vorgabe der maximalen Zeit kann willkürlich und zu kurz sein, was zu falschen Entscheidungen führt.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const topics = [
+  {name:'Grundlagen & Konzept', cards:[
+    {q:'Was ist das Ziel der Amortisationsrechnung?', a:'Festzustellen, wie lange es dauert, bis das eingesetzte Kapital (die Investitionsausgaben) durch die zukünftigen Einzahlungsüberschüsse vollständig zurückgeflossen ist.'},
+    {q:'Was versteht man unter der Amortisationszeit (t_w)?', a:'Der Zeitraum, innerhalb dessen das für eine Investition eingesetzte Kapital durch die kumulierten Einzahlungsüberschüsse gedeckt ist. Je kürzer, desto vorteilhafter und risikoärmer ist die Investition.'},
+    {q:'Warum ist die Amortisationsrechnung ein statisches Verfahren?', a:'Weil Durchschnittswerte einer Periode verglichen werden. Der Zeitwert des Geldes (Abzinsung) wird nicht berücksichtigt – spätere Einzahlungen werden genauso bewertet wie frühere.'},
+    {q:'Was gilt bei mehreren Investitionsalternativen?', a:'Die Alternative mit der kürzesten Amortisationszeit ist vorzuziehen, da das Kapital am schnellsten zurückfließt und das Risiko am geringsten ist.'},
+    {q:'Was bedeutet eine maximale Amortisationszeit?', a:'Die Geschäftsführung legt eine Höchstgrenze fest (z. B. 3,5 Jahre). Investitionen, deren Amortisationszeit diese Grenze überschreitet, gelten als nicht vorteilhaft.'},
+    {q:'Wie hängen Einzahlungsüberschüsse und Amortisationszeit zusammen?', a:'Je höher die jährlichen Einzahlungsüberschüsse, desto schneller fließt das Kapital zurück und desto kürzer ist die Amortisationszeit.'},
+  ]},
+  {name:'Einzahlungsüberschuss & Abschreibung', cards:[
+    {q:'Warum dürfen Einzahlungsüberschüsse nicht mit dem Gewinn gleichgesetzt werden?', a:'Weil Abschreibungen als nicht auszahlungswirksame Kosten den Gewinn mindern, aber keinen tatsächlichen Geldabfluss darstellen. Für den echten Kapitalrückfluss müssen Abschreibungen zum Gewinn addiert werden.'},
+    {q:'Was sind auszahlungswirksame Kosten?', a:'Kosten, bei denen tatsächlich Geld abfließt (z. B. Löhne, Materialkosten, Energiekosten). Nur diese sind für die Ermittlung des Einzahlungsüberschusses relevant.'},
+    {q:'Was sind auszahlungsunwirksame Kosten? Nennen Sie ein Beispiel.', a:'Kosten, bei denen kein Geld abfließt (kein Zahlungsvorgang). Das wichtigste Beispiel sind Abschreibungen: Sie mindern den Gewinn, stellen aber keinen Mittelabfluss dar.'},
+    {q:'Wie wird der Kapitalrückfluss berechnet?', a:'Kapitalrückfluss = Gewinn/Jahr + jährliche Abschreibung. Alternativ: Einzahlungen − Auszahlungen (ohne Abschreibung). Beide ergeben denselben Wert.'},
+    {q:'Wie hoch ist die kalk. Abschreibung bei AW = 950.000 €, RW = 50.000 €, ND = 10 Jahre?', a:'(950.000 − 50.000) / 10 = 90.000 € pro Jahr. Der Kapitalrückfluss bei 200.000 € Gewinn beträgt: 200.000 + 90.000 = 290.000 €/Jahr.'},
+  ]},
+  {name:'Einzelinvestition', cards:[
+    {q:'Formel Amortisationszeit – Einzelinvestition (Gewinn gegeben)?', a:'t_w = (AW − RW) / (Ø Gewinn/Jahr + jährl. Abschreibung). Zähler = zu amortisierendes Kapital. Nenner = jährlicher Kapitalrückfluss.'},
+    {q:'Formel Amortisationszeit – Einzelinvestition (Einzahlungen/Auszahlungen gegeben)?', a:'t_w = (AW − RW) / Ø Kapitalrückfluss/Jahr. Kapitalrückfluss = Einzahlungen − Auszahlungen (inkl. auszahlungswirksame Kosten, ohne Abschreibung).'},
+    {q:'Amortisationszeit Alternative 1 (Fertigungsstraße)?', a:'Abschr. = (950.000 − 50.000)/10 = 90.000 €. t_w = 900.000 / (200.000 + 90.000) = 3,10 Jahre. Liegt unter der Grenze von 3,5 Jahren → vorteilhaft.'},
+    {q:'Amortisationszeit Alternative 2 (Fertigungsstraße)?', a:'Einz.übers. = 550.000 − 220.000 = 330.000 €. t_w = (1.100.000 − 100.000) / 330.000 = 3,03 Jahre. Liegt unter 3,5 Jahren → vorteilhaft.'},
+    {q:'Welche Alternative ist bei der Fertigungsstraße vorzuziehen?', a:'Beide erfüllen die Vorgabe von max. 3,5 Jahren. Alt. 2 ist mit 3,03 Jahren etwas kürzer als Alt. 1 mit 3,10 Jahren. Der Unterschied ist gering (< 1 Monat) – bei anderen Vorteilen kann auch Alt. 1 gewählt werden.'},
+  ]},
+  {name:'Rationalisierungsinvestition', cards:[
+    {q:'Was ist die Besonderheit bei der Amortisationsrechnung für Rationalisierungsinvestitionen?', a:'Es gibt keinen direkten Einzahlungsüberschuss. Stattdessen wird die Kosteneinsparung als Grundlage genutzt. Zusätzlich werden die zusätzlichen Abschreibungen (neu − alt) zur Einsparung hinzuaddiert.'},
+    {q:'Formel Amortisationszeit – Rationalisierungsinvestition?', a:'t_w = (AW_neu − RW_alt) / (Kosteneinsparung/Jahr + zusätzliche Abschreibung). Alternativ: zusätzlicher Kapitaleinsatz / Ø jährliche Auszahlungsminderung.'},
+    {q:'Warum werden zusätzliche Abschreibungen zur Kosteneinsparung addiert?', a:'Die neue Maschine hat höhere Abschreibungen als die alte. Diese mindern die berechnete Kosteneinsparung, sind aber nicht auszahlungswirksam. Daher müssen sie wieder hinzuaddiert werden, um die echte Auszahlungsminderung zu erhalten.'},
+    {q:'Wie wird die zusätzliche Abschreibung berechnet?', a:'Zusätzliche Abschreibung = jährl. Abschreibung der neuen Anlage − jährl. Abschreibung der alten Anlage. Beispiel: 38.000 − 30.000 = 8.000 €/Jahr.'},
+    {q:'Ergebnis Montageautomat (Rationalisierung)?', a:'Abschr. neu = (240.000−12.000)/6 = 38.000 €. Zusatzabschr. = 38.000−30.000 = 8.000 €. t_w = (240.000−15.000)/(80.000+8.000) = 2,56 Jahre. Leichte Überschreitung der 2,5 Jahre – trotzdem vorteilhaft.'},
+    {q:'Drei Gründe für Kosteneinsparungen durch eine Rationalisierungsinvestition?', a:'1. Geringerer Energieverbrauch durch effizientere Technik. 2. Weniger Ausschuss und dadurch geringere Materialkosten. 3. Geringere Wartungskosten bei einer Anlage auf aktuellem technischen Stand.'},
+  ]},
+  {name:'Vor- & Nachteile', cards:[
+    {q:'Nennen Sie 3 Vorteile der Amortisationsrechnung.', a:'1. Einfachheit: leicht verständlich, geringer Rechenaufwand. 2. Risikobeurteilung: zeigt, wie lange Kapital gebunden ist. 3. Liquiditätsfokus: stellt den Kapitalrückfluss in den Vordergrund – wichtig für die Liquiditätsplanung.'},
+    {q:'Nennen Sie 3 Nachteile der Amortisationsrechnung.', a:'1. Kein Zeitwert des Geldes: statisches Verfahren, keine Abzinsung. 2. Keine Aussage zur Rentabilität: wie viel Gewinn wird über die Gesamtlaufzeit erwirtschaftet? 3. Schätzfehler: Prognosen können stark von der Realität abweichen.'},
+    {q:'Was ist der Hauptunterschied zwischen Amortisationsrechnung und Kapitalwertmethode?', a:'Amortisationsrechnung: statisch, kein Zeitwert des Geldes, zeigt nur Rückflussdauer. Kapitalwertmethode: dynamisch, berücksichtigt Zahlungszeitpunkte durch Abzinsung, zeigt den Gesamtertrag der Investition.'},
+    {q:'Was ist das Problem mit der maximalen Amortisationszeit als Entscheidungskriterium?', a:'Die Grenze kann willkürlich und zu kurz gesetzt werden, sodass vorteilhafte Investitionen fälschlicherweise abgelehnt werden. Außerdem sagt die Zeit nach der Amortisation nichts über Profitabilität aus.'},
+    {q:'Warum ist die Amortisationsrechnung für Johanna Wedermann hilfreich?', a:'Sie ermöglicht eine schnelle, überschaubare Risikoeinschätzung: Bei einem Investitionsvolumen von ca. 1 Mio. € ist es wichtig zu wissen, wann das Kapital zurückgeflossen ist und wie lange das Unternehmen Verlustrisiko trägt.'},
+  ]},
+];
+
+let allCards=[];
+topics.forEach(t=>t.cards.forEach(c=>allCards.push({...c,topic:t.name})));
+let currentCards=[],cardIdx=0;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function loadTopic(){
+  const v=document.getElementById('topic-sel').value;
+  currentCards=v==='all'?shuffle([...allCards]):shuffle([...topics[parseInt(v)].cards]);
+  cardIdx=0;showCard();
+}
+
+function showCard(){
+  if(!currentCards.length)return;
+  const c=currentCards[cardIdx];
+  document.getElementById('card-badge').textContent=c.topic||'Begriff';
+  document.getElementById('card-q').textContent=c.q;
+  document.getElementById('card-a').textContent=c.a;
+  document.getElementById('card-a').classList.remove('show');
+  document.getElementById('flip-hint').textContent='Klicken zum Aufdecken';
+  document.getElementById('btns-before').style.display='flex';
+  document.getElementById('btns-after').style.display='none';
+  const t=currentCards.length;
+  document.getElementById('card-counter').textContent=(cardIdx+1)+' / '+t;
+  document.getElementById('prog-fill').style.width=((cardIdx+1)/t*100)+'%';
+}
+
+function toggleAnswer(){
+  const a=document.getElementById('card-a');
+  if(a.classList.contains('show'))return;
+  a.classList.add('show');
+  document.getElementById('flip-hint').textContent='';
+  document.getElementById('btns-before').style.display='none';
+  document.getElementById('btns-after').style.display='flex';
+}
+function markCard(known){if(!known)currentCards.push(currentCards[cardIdx]);nextCard();}
+function nextCard(){if(cardIdx<currentCards.length-1){cardIdx++;showCard();}}
+function prevCard(){if(cardIdx>0){cardIdx--;showCard();}}
+
+// Quiz
+const quizPool=[];
+topics.forEach(t=>{
+  t.cards.forEach(c=>{
+    const wrongs=shuffle(allCards.filter(x=>x.q!==c.q)).slice(0,3).map(x=>x.a.substring(0,90)+'…');
+    const correct=c.a.substring(0,90)+'…';
+    quizPool.push({q:c.q,correct,opts:shuffle([correct,...wrongs])});
+  });
+});
+
+let quizQs=[],qIdx=0,qRight=0,qWrong=0,ans2=false;
+
+function startQuiz(){
+  quizQs=shuffle([...quizPool]).slice(0,20);
+  qIdx=0;qRight=0;qWrong=0;
+  document.getElementById('quiz-end').style.display='none';
+  document.getElementById('quiz-main').style.display='block';
+  showQuestion();
+}
+
+function showQuestion(){
+  ans2=false;
+  const q=quizQs[qIdx];
+  document.getElementById('quiz-question').textContent=q.q;
+  document.getElementById('q-total').textContent='Frage '+(qIdx+1)+' / '+quizQs.length;
+  document.getElementById('q-right').textContent='✓ '+qRight+' richtig';
+  document.getElementById('q-wrong').textContent='✗ '+qWrong+' falsch';
+  const el=document.getElementById('quiz-opts');
+  el.innerHTML='';
+  q.opts.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='qopt';btn.textContent=opt;
+    btn.onclick=()=>selectOpt(btn,opt,q.correct);
+    el.appendChild(btn);
+  });
+  document.getElementById('quiz-fb').style.display='none';
+  document.getElementById('quiz-next').style.display='none';
+}
+
+function selectOpt(btn,chosen,correct){
+  if(ans2)return;ans2=true;
+  document.querySelectorAll('.qopt').forEach(b=>b.classList.add('disabled'));
+  const fb=document.getElementById('quiz-fb');
+  if(chosen===correct){btn.classList.add('correct');qRight++;fb.className='quiz-fb ok';fb.textContent='✓ Richtig! '+correct;}
+  else{btn.classList.add('wrong');qWrong++;document.querySelectorAll('.qopt').forEach(b=>{if(b.textContent===correct)b.classList.add('correct');});fb.className='quiz-fb nok';fb.textContent='✗ Falsch. Richtig: '+correct;}
+  fb.style.display='block';
+  document.getElementById('q-right').textContent='✓ '+qRight+' richtig';
+  document.getElementById('q-wrong').textContent='✗ '+qWrong+' falsch';
+  document.getElementById('quiz-next').style.display='inline-block';
+}
+
+function nextQuestion(){qIdx++;if(qIdx>=quizQs.length)showQuizEnd();else showQuestion();}
+
+function showQuizEnd(){
+  document.getElementById('quiz-main').style.display='none';
+  const pct=Math.round(qRight/quizQs.length*100);
+  document.getElementById('end-score').textContent=pct+'%';
+  let label=pct>=80?'Ausgezeichnet! 🎉':pct>=60?'Gut gemacht! 👍':'Weiterüben! 📚';
+  document.getElementById('end-label').textContent=qRight+' von '+quizQs.length+' richtig – '+label;
+  document.getElementById('quiz-end').style.display='block';
+}
+
+function fmt(n){return n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
+function fmtJ(n){return n.toFixed(2)+' Jahre';}
+
+function addStep(box, label, value, cls){
+  const row=document.createElement('div');
+  row.className='step-row'+(cls?' '+cls:'');
+  row.innerHTML=`<span>${label}</span><span>${value}</span>`;
+  box.appendChild(row);
+}
+
+function calcEinzel(){
+  const g=id=>parseFloat(document.getElementById(id).value)||0;
+  const aw1=g('e1-aw'),rw1=g('e1-rw'),nd1=g('e1-nd'),gew1=g('e1-gew'),einz1=g('e1-einz'),ausz1=g('e1-ausz');
+  const aw2=g('e2-aw'),rw2=g('e2-rw'),nd2=g('e2-nd'),gew2=g('e2-gew'),einz2=g('e2-einz'),ausz2=g('e2-ausz');
+  const maxT=g('e-max');
+
+  function calc(aw,rw,nd,gew,einz,ausz,box,label){
+    box.innerHTML='';
+    const title=document.createElement('div');
+    title.className='step-title';title.textContent=label;
+    box.appendChild(title);
+    const abschr=(aw-rw)/nd;
+    let krf;
+    if(gew>0){
+      addStep(box,'Abschreibung/Jahr',fmt(abschr));
+      addStep(box,'Gewinn/Jahr',fmt(gew));
+      krf=gew+abschr;
+      addStep(box,'Kapitalrückfluss',fmt(krf),'bold');
+    } else {
+      const ueber=einz-ausz;
+      addStep(box,'Einzahlungen/Jahr',fmt(einz));
+      addStep(box,'− Auszahlungen/Jahr',fmt(ausz));
+      krf=ueber;
+      addStep(box,'Einzahlungsüberschuss',fmt(ueber),'bold');
+    }
+    const tw=(aw-rw)/krf;
+    addStep(box,'Kapitaleinsatz (AW−RW)',fmt(aw-rw));
+    const resultRow=document.createElement('div');
+    resultRow.className='step-row result';
+    resultRow.innerHTML=`<span>Amortisationszeit t_w</span><span>${fmtJ(tw)}</span>`;
+    box.appendChild(resultRow);
+    return tw;
+  }
+
+  const b1=document.getElementById('e-steps1');
+  const b2=document.getElementById('e-steps2');
+  const tw1=calc(aw1,rw1,nd1,gew1,einz1,ausz1,b1,'Alternative 1');
+  const tw2=calc(aw2,rw2,nd2,gew2,einz2,ausz2,b2,'Alternative 2');
+
+  const v=document.getElementById('e-verdict');
+  const ok1=tw1<=maxT, ok2=tw2<=maxT;
+  let txt='';
+  if(ok1&&ok2){
+    const shorter=tw1<=tw2?'Alternative 1':'Alternative 2';
+    txt=`✅ Beide Alternativen erfüllen die Vorgabe von max. ${maxT} Jahren. ${shorter} hat die kürzere Amortisationszeit und ist vorzuziehen.`;
+    v.className='verdict ok';
+  } else if(ok1){
+    txt=`⚠️ Nur Alternative 1 (${fmtJ(tw1)}) erfüllt die Vorgabe. Alternative 2 (${fmtJ(tw2)}) überschreitet die max. Zeit von ${maxT} Jahren.`;
+    v.className='verdict warn';
+  } else if(ok2){
+    txt=`⚠️ Nur Alternative 2 (${fmtJ(tw2)}) erfüllt die Vorgabe. Alternative 1 (${fmtJ(tw1)}) überschreitet die max. Zeit von ${maxT} Jahren.`;
+    v.className='verdict warn';
+  } else {
+    txt=`❌ Keine der Alternativen erfüllt die Vorgabe von max. ${maxT} Jahren. Alt. 1: ${fmtJ(tw1)} | Alt. 2: ${fmtJ(tw2)}.`;
+    v.className='verdict nok';
+  }
+  v.textContent=txt;
+  v.style.display='block';
+  document.getElementById('e-result').style.display='block';
+}
+
+function calcRation(){
+  const g=id=>parseFloat(document.getElementById(id).value)||0;
+  const awNeu=g('r-aw-neu'),rwNeu=g('r-rw-neu'),ndNeu=g('r-nd-neu');
+  const eins=g('r-eins'),rwAlt=g('r-rw-alt'),abAlt=g('r-ab-alt');
+  const maxT=g('r-max');
+
+  const abNeu=(awNeu-rwNeu)/ndNeu;
+  const abZusatz=abNeu-abAlt;
+  const nenner=eins+abZusatz;
+  const zaehler=awNeu-rwAlt;
+  const tw=zaehler/nenner;
+
+  const box=document.getElementById('r-steps');
+  box.innerHTML='';
+  const title=document.createElement('div');
+  title.className='step-title';title.textContent='Rechenweg';
+  box.appendChild(title);
+  addStep(box,'Abschreibung neu/Jahr',fmt(abNeu));
+  addStep(box,'Abschreibung alt/Jahr',fmt(abAlt));
+  addStep(box,'Zusätzliche Abschreibung',fmt(abZusatz),'bold');
+  addStep(box,'Kosteneinsparung/Jahr',fmt(eins));
+  addStep(box,'Nenner (Einspar. + Zusatzabschr.)',fmt(nenner),'bold');
+  addStep(box,'AW_neu − RW_alt (Zähler)',fmt(zaehler));
+  const r=document.createElement('div');
+  r.className='step-row result';
+  r.innerHTML=`<span>Amortisationszeit t_w</span><span>${fmtJ(tw)}</span>`;
+  box.appendChild(r);
+
+  const v=document.getElementById('r-verdict');
+  if(tw<=maxT){
+    v.className='verdict ok';
+    v.textContent=`✅ Die Amortisationszeit von ${fmtJ(tw)} liegt unter der Vorgabe von ${maxT} Jahren. Die Rationalisierungsinvestition ist vorteilhaft.`;
+  } else if(tw<=maxT*1.1){
+    v.className='verdict warn';
+    v.textContent=`⚠️ Die Amortisationszeit von ${fmtJ(tw)} überschreitet die Vorgabe von ${maxT} Jahren leicht. Gemessen an der Gesamtbetriebsdauer kann die Investition dennoch als vorteilhaft eingeschätzt werden.`;
+  } else {
+    v.className='verdict nok';
+    v.textContent=`❌ Die Amortisationszeit von ${fmtJ(tw)} überschreitet die Vorgabe von ${maxT} Jahren deutlich. Die Rationalisierungsinvestition ist nicht vorteilhaft.`;
+  }
+  v.style.display='block';
+  document.getElementById('r-result').style.display='block';
+}
+
+function switchCalc(name,e){
+  document.querySelectorAll('.ctab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.calc-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('calc-'+name).classList.add('active');
+  if(e&&e.target)e.target.classList.add('active');
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='quiz'&&qIdx===0&&!ans2)startQuiz();
+}
+
+function goCards(idx){
+  showScreen('cards');
+  document.getElementById('topic-sel').value=idx;
+  loadTopic();
+}
+
+loadTopic();
+</script>
+</body>
+</html>
